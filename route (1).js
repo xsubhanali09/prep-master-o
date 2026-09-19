@@ -1,49 +1,34 @@
 import { NextResponse } from "next/server";
-import { getDb } from "../../../../lib/mongodb";
+import { getDb } from "../../../lib/mongodb";
 
-function authorized(request) {
-  const username = request.headers.get("x-admin-username");
-  const password = request.headers.get("x-admin-password");
-  const secret = request.headers.get("x-admin-secret");
-
-  return (
-    username === process.env.ADMIN_USERNAME &&
-    password === process.env.ADMIN_PASSWORD &&
-    secret === process.env.ADMIN_SECRET
-  );
-}
-
-export async function GET(request) {
-  if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET() {
   try {
     const db = await getDb();
-    const batches = await db.collection("batches").find({}).sort({ createdAt: -1 }).toArray();
-    return NextResponse.json(batches);
+    const messages = await db.collection("community").find({}).sort({ createdAt: 1 }).limit(200).toArray();
+    return NextResponse.json(messages.map(({ _id, ...m }) => ({ id: _id.toString(), ...m })));
   } catch {
-    return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
+    return NextResponse.json([]);
   }
 }
 
 export async function POST(request) {
-  if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const data = await request.json();
+    const { visitorId, username, text } = await request.json();
+    const clean = String(text || "").trim();
+    if (!visitorId || !clean || clean.length > 1000) {
+      return NextResponse.json({ error: "Invalid message." }, { status: 400 });
+    }
+
     const db = await getDb();
     const doc = {
-      id: String(data.id || crypto.randomUUID()),
-      name: String(data.name || "New Batch").slice(0, 150),
-      image: String(data.image || ""),
-      description: String(data.description || ""),
-      teacher: String(data.teacher || ""),
-      language: String(data.language || ""),
-      price: String(data.price || "Free"),
-      subjects: Array.isArray(data.subjects) ? data.subjects : [],
-      content: Array.isArray(data.content) ? data.content : [],
+      visitorId: String(visitorId),
+      username: String(username || "Student").slice(0, 40),
+      text: clean,
       createdAt: new Date()
     };
-    await db.collection("batches").updateOne({ id: doc.id }, { $set: doc }, { upsert: true });
-    return NextResponse.json(doc);
+    const result = await db.collection("community").insertOne(doc);
+    return NextResponse.json({ id: result.insertedId.toString(), ...doc });
   } catch {
-    return NextResponse.json({ error: "Could not save batch." }, { status: 500 });
+    return NextResponse.json({ error: "Could not send message." }, { status: 503 });
   }
 }

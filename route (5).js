@@ -1,34 +1,23 @@
 import { NextResponse } from "next/server";
-import { getDb } from "../../../lib/mongodb";
+import { getDb } from "../../../../lib/mongodb";
+import { ObjectId } from "mongodb";
 
-export async function GET() {
-  try {
-    const db = await getDb();
-    const messages = await db.collection("community").find({}).sort({ createdAt: 1 }).limit(200).toArray();
-    return NextResponse.json(messages.map(({ _id, ...m }) => ({ id: _id.toString(), ...m })));
-  } catch {
-    return NextResponse.json([]);
-  }
+function authorized(request) {
+  return (
+    request.headers.get("x-admin-username") === process.env.ADMIN_USERNAME &&
+    request.headers.get("x-admin-password") === process.env.ADMIN_PASSWORD &&
+    request.headers.get("x-admin-secret") === process.env.ADMIN_SECRET
+  );
 }
 
-export async function POST(request) {
+export async function DELETE(request) {
+  if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const { visitorId, username, text } = await request.json();
-    const clean = String(text || "").trim();
-    if (!visitorId || !clean || clean.length > 1000) {
-      return NextResponse.json({ error: "Invalid message." }, { status: 400 });
-    }
-
+    const { id } = await request.json();
     const db = await getDb();
-    const doc = {
-      visitorId: String(visitorId),
-      username: String(username || "Student").slice(0, 40),
-      text: clean,
-      createdAt: new Date()
-    };
-    const result = await db.collection("community").insertOne(doc);
-    return NextResponse.json({ id: result.insertedId.toString(), ...doc });
+    await db.collection("community").deleteOne({ _id: new ObjectId(id) });
+    return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Could not send message." }, { status: 503 });
+    return NextResponse.json({ error: "Could not delete message." }, { status: 400 });
   }
 }

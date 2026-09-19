@@ -1,50 +1,19 @@
 import { NextResponse } from "next/server";
+import { getDb } from "../../../lib/mongodb";
 
-export async function GET(request) {
+export async function POST(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const page = Math.max(1, Number(searchParams.get("page") || "1"));
-    const baseUrl = process.env.BATCH_API_URL || "https://pwthor.live/api/AllBatches";
-    const url = `${baseUrl}?page=${page}`;
+    const { visitorId, batchId } = await request.json();
+    if (!visitorId || !batchId) return NextResponse.json({ error: "Missing data." }, { status: 400 });
 
-    const response = await fetch(url, {
-      method: "GET",
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    });
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: `Batch API returned ${response.status}` },
-        { status: response.status }
-      );
-    }
-
-    const result = await response.json();
-    const data = Array.isArray(result.data) ? result.data : [];
-
-    const batches = data.map((item) => ({
-      id: item.batchId || item._id || item.id,
-      name: item.batchName || item.name || "Unnamed Batch",
-      image: item.batchImage || item.image || "",
-      language: item.language || "All Languages",
-      price: item.batchPrice ?? item.price ?? "Free",
-      startDate: item.startDate || "",
-      endDate: item.endDate || "",
-      isExternal: item.isExternal ?? false,
-    }));
-
-    return NextResponse.json({
-      data: batches,
-      page,
-      totalPages: Number(result.totalPages || page),
-      totalItems: Number(result.totalItems || batches.length),
-    });
-  } catch (error) {
-    console.error("Batch API error:", error);
-    return NextResponse.json(
-      { error: "Unable to fetch batches." },
-      { status: 502 }
+    const db = await getDb();
+    await db.collection("enrollments").updateOne(
+      { visitorId, batchId: String(batchId) },
+      { $setOnInsert: { visitorId, batchId: String(batchId), createdAt: new Date() } },
+      { upsert: true }
     );
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Could not save enrollment." }, { status: 503 });
   }
 }

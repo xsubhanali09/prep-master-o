@@ -27,14 +27,31 @@ const fallbackBatches = [
   }
 ];
 
+function createId() {
+  try {
+    if (typeof globalThis !== "undefined" && globalThis.crypto?.randomUUID) {
+      return globalThis.crypto.randomUUID();
+    }
+  } catch {}
+
+  return `pm_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function getVisitorId() {
   if (typeof window === "undefined") return "";
-  let id = localStorage.getItem("pm_visitor_id");
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem("pm_visitor_id", id);
+
+  try {
+    let id = window.localStorage.getItem("pm_visitor_id");
+
+    if (!id) {
+      id = createId();
+      window.localStorage.setItem("pm_visitor_id", id);
+    }
+
+    return id;
+  } catch {
+    return createId();
   }
-  return id;
 }
 
 export default function PrepMasterApp() {
@@ -57,8 +74,12 @@ export default function PrepMasterApp() {
   const visitorId = useMemo(() => getVisitorId(), []);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("pm_theme");
-    if (savedTheme) setTheme(savedTheme);
+    try {
+      const savedTheme = window.localStorage.getItem("pm_theme");
+      if (savedTheme === "light" || savedTheme === "dark") {
+        setTheme(savedTheme);
+      }
+    } catch {}
     loadBatches(1, true);
     refreshMyBatches();
     refreshCommunity();
@@ -66,7 +87,9 @@ export default function PrepMasterApp() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem("pm_theme", theme);
+    try {
+      window.localStorage.setItem("pm_theme", theme);
+    } catch {}
   }, [theme]);
 
   async function loadBatches(page = 1, replace = false) {
@@ -77,8 +100,10 @@ export default function PrepMasterApp() {
       if (!r.ok) return;
       const result = await r.json();
       const incoming = Array.isArray(result.data) ? result.data : [];
+
+      // Keep the built-in demo batches if the external API is empty.
       setBatches(prev => {
-        const combined = replace ? incoming : [...prev, ...incoming];
+        const combined = replace && incoming.length ? incoming : [...prev, ...incoming];
         const seen = new Set();
         return combined.filter(b => {
           if (!b.id || seen.has(b.id)) return false;
@@ -133,7 +158,7 @@ export default function PrepMasterApp() {
     e.preventDefault();
     if (!message.trim()) return;
     const local = {
-      id: crypto.randomUUID(),
+      id: createId(),
       username: "Student",
       text: message.trim(),
       createdAt: new Date().toISOString()
@@ -173,7 +198,9 @@ export default function PrepMasterApp() {
     }
   }
 
-  const filtered = batches.filter(b => b.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = batches.filter((b) =>
+    String(b?.name || "").toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="app-shell">
@@ -297,11 +324,18 @@ function NavButton({active, icon, label, onClick}) {
 
 function BatchCard({batch, enrolled, onStudy, onEnroll}) {
   return <article className="batch-card">
-    <img src={batch.image || "https://placehold.co/900x500?text=Prep+Master"} alt="" />
+    <img
+      src={batch.image || "https://placehold.co/900x500?text=Prep+Master"}
+      alt=""
+      onError={(e) => {
+        e.currentTarget.onerror = null;
+        e.currentTarget.src = "https://placehold.co/900x500?text=Prep+Master";
+      }}
+    />
     <div className="card-body">
-      <h3>{batch.name}</h3>
+      <h3>{String(batch.name || "Unnamed Batch")}</h3>
       <div className="meta"><span>{batch.language || "All Languages"}</span><span>{batch.price || "Free"}</span></div>
-      {batch.teacher && <p className="teacher">{batch.teacher}</p>}
+      {batch.teacher && <p className="teacher">{String(batch.teacher)}</p>}
       <div className="card-actions">
         <button className="secondary" onClick={onStudy}>Study</button>
         <button className="primary" disabled={enrolled} onClick={onEnroll}>{enrolled ? "✓ Enrolled" : "Enroll"}</button>
@@ -313,14 +347,30 @@ function BatchCard({batch, enrolled, onStudy, onEnroll}) {
 function BatchDetail({batch, onClose, onEnroll, enrolled}) {
   return <div className="modal-wrap"><div className="modal">
     <button className="close" onClick={onClose}>×</button>
-    <img className="detail-image" src={batch.image} alt="" />
+    <img
+      className="detail-image"
+      src={batch.image || "https://placehold.co/900x500?text=Prep+Master"}
+      alt=""
+      onError={(e) => {
+        e.currentTarget.onerror = null;
+        e.currentTarget.src = "https://placehold.co/900x500?text=Prep+Master";
+      }}
+    />
     <div className="detail-content">
-      <span className="eyebrow">BATCH</span><h2>{batch.name}</h2>
-      <p>{batch.description || "Study material and lessons for this batch."}</p>
-      <div className="detail-grid"><div><b>Teacher</b><span>{batch.teacher || "Prep Master Faculty"}</span></div><div><b>Language</b><span>{batch.language || "All languages"}</span></div><div><b>Price</b><span>{batch.price || "Free"}</span></div></div>
-      <h3>Subjects</h3><div className="chips">{(batch.subjects || []).map(s => <span key={s}>{s}</span>)}</div>
+      <span className="eyebrow">BATCH</span><h2>{String(batch.name || "Unnamed Batch")}</h2>
+      <p>{String(batch.description || "Study material and lessons for this batch.")}</p>
+      <div className="detail-grid"><div><b>Teacher</b><span>{String(batch.teacher || "Prep Master Faculty")}</span></div><div><b>Language</b><span>{String(batch.language || "All languages")}</span></div><div><b>Price</b><span>{String(batch.price || "Free")}</span></div></div>
+      <h3>Subjects</h3><div className="chips">{(Array.isArray(batch.subjects) ? batch.subjects : []).map((subject, i) => (
+        <span key={`${String(subject)}-${i}`}>{String(subject)}</span>
+      ))}</div>
       <h3>Study Content</h3>
-      {(batch.content || []).length ? <div className="content-list">{batch.content.map((c,i)=><div key={i}>📘 {c.title || c.name || "Lesson"}</div>)}</div> : <p className="muted">Content admin panel se add kiya ja sakta hai.</p>}
+      {(batch.content || []).length ? <div className="content-list">{batch.content.map((c, i) => {
+        const title =
+          c && typeof c === "object"
+            ? c.title || c.name || "Lesson"
+            : String(c || "Lesson");
+        return <div key={i}>📘 {String(title)}</div>;
+      })}</div> : <p className="muted">Content admin panel se add kiya ja sakta hai.</p>}
       <button className="primary wide" disabled={enrolled} onClick={onEnroll}>{enrolled ? "✓ Enrolled" : "Enroll in this Batch"}</button>
     </div>
   </div></div>;

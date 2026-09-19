@@ -3,17 +3,15 @@ import { getDb } from "../../../lib/mongodb";
 
 export async function POST(request) {
   try {
-    const { visitorId, batchId } = await request.json();
-    if (!visitorId || !batchId) return NextResponse.json({ error: "Missing data." }, { status: 400 });
+    const { visitorId } = await request.json();
+    if (!visitorId) return NextResponse.json({ error: "Missing visitor id." }, { status: 400 });
 
     const db = await getDb();
-    await db.collection("enrollments").updateOne(
-      { visitorId, batchId: String(batchId) },
-      { $setOnInsert: { visitorId, batchId: String(batchId), createdAt: new Date() } },
-      { upsert: true }
-    );
-    return NextResponse.json({ ok: true });
+    const rows = await db.collection("enrollments").find({ visitorId }).toArray();
+    const ids = rows.map((r) => r.batchId);
+    const batches = await db.collection("batches").find({ id: { $in: ids } }).toArray();
+    return NextResponse.json(batches);
   } catch {
-    return NextResponse.json({ error: "Could not save enrollment." }, { status: 503 });
+    return NextResponse.json({ error: "Database not configured or unavailable." }, { status: 503 });
   }
 }

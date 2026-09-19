@@ -1,0 +1,19 @@
+PREP MASTER - RENDER DEPLOYMENT
+
+IMPORTANT:
+The root app/page.js is now a Client Component containing the Prep Master app directly.
+This removes the page -> components/PrepMasterApp import boundary.
+
+Render:
+Build Command:
+npm install && npm run build
+
+Start Command:
+npm start
+
+Do not set a Root Directory unless package.json is inside a subfolder.
+
+After uploading this project to GitHub:
+1. Commit all files.
+2. Render -> Manual Deploy -> Deploy latest commit.
+3. Wait for build to finish.

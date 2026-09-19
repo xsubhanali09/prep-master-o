@@ -1,0 +1,15 @@
+PREP MASTER - BATCH API SETUP
+
+1) Copy .env.example to .env.local
+2) Keep/add this line in .env.local:
+   BATCH_API_URL=https://pwthor.live/api/AllBatches
+3) No API key or browser cookie is needed by this setup.
+4) The backend route is:
+   app/api/batches/route.js
+5) The frontend is:
+   components/PrepMasterApp.js
+6) The frontend loads page 1 first and uses Load More for later pages.
+   This is intentional because the API is paginated; loading thousands of
+   batches in one browser request would be slow and memory-heavy.
+7) MongoDB code is left untouched for your other app features.
+8) Restart the Next.js dev server after changing .env.local.

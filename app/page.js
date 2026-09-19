@@ -288,9 +288,7 @@ export default function PrepMasterApp() {
       <header className="topbar">
         <div>
           <div className="brand">Prep Master</div>
-          <div className="tagline">
-            Learn. Practice. Grow.
-          </div>
+          <div className="tagline">Learn. Practice. Grow.</div>
         </div>
 
         <button
@@ -313,8 +311,7 @@ export default function PrepMasterApp() {
               <h1>Choose your batch</h1>
 
               <p>
-                Study with organized courses, notes and
-                lessons.
+                Study with organized courses, notes and lessons.
               </p>
             </div>
           </div>
@@ -330,9 +327,7 @@ export default function PrepMasterApp() {
           </div>
 
           <section>
-            <div className="section-title">
-              All Batches
-            </div>
+            <div className="section-title">All Batches</div>
 
             <div className="grid">
               {filtered.map((batch) => (
@@ -376,10 +371,7 @@ export default function PrepMasterApp() {
       {tab === "my" && (
         <main className="page">
           <div className="page-heading">
-            <span className="eyebrow">
-              YOUR COURSES
-            </span>
-
+            <span className="eyebrow">YOUR COURSES</span>
             <h1>My Batches</h1>
           </div>
 
@@ -413,8 +405,8 @@ export default function PrepMasterApp() {
             <h1>Community</h1>
 
             <p>
-              Text-only community chat. Media posting is
-              reserved for admin.
+              Text-only community chat. Media posting is reserved
+              for admin.
             </p>
           </div>
 
@@ -422,10 +414,7 @@ export default function PrepMasterApp() {
             <div className="messages">
               {community.length ? (
                 community.map((m) => (
-                  <div
-                    className="bubble"
-                    key={m.id}
-                  >
+                  <div className="bubble" key={m.id}>
                     <strong>{m.username}</strong>
                     <p>{m.text}</p>
                   </div>
@@ -459,15 +448,12 @@ export default function PrepMasterApp() {
       {tab === "ai" && (
         <main className="page ai-page">
           <div className="page-heading">
-            <span className="eyebrow">
-              STUDY ASSISTANT
-            </span>
+            <span className="eyebrow">STUDY ASSISTANT</span>
 
             <h1>🤖 Prep Master AI</h1>
 
             <p>
-              Ask your study doubt in Hindi, Hinglish or
-              English.
+              Ask your study doubt in Hindi, Hinglish or English.
             </p>
           </div>
 
@@ -476,10 +462,9 @@ export default function PrepMasterApp() {
               {!aiMessages.length && (
                 <div className="ai-welcome">
                   <b>👋 Hello!</b>
-
                   <p>
-                    Apna study doubt poochho. Main Prep
-                    Master AI hoon.
+                    Apna study doubt poochho. Main Prep Master AI
+                    hoon.
                   </p>
                 </div>
               )}
@@ -487,9 +472,7 @@ export default function PrepMasterApp() {
               {aiMessages.map((m, i) => (
                 <div
                   key={i}
-                  className={
-                    "ai-bubble " + m.role
-                  }
+                  className={"ai-bubble " + m.role}
                 >
                   <b>
                     {m.role === "user"
@@ -627,9 +610,7 @@ export default function PrepMasterApp() {
             <button
               onClick={() =>
                 setTheme(
-                  theme === "dark"
-                    ? "light"
-                    : "dark"
+                  theme === "dark" ? "light" : "dark"
                 )
               }
             >
@@ -656,8 +637,7 @@ function NavButton({
   return (
     <button
       className={
-        "nav-item " +
-        (active ? "active" : "")
+        "nav-item " + (active ? "active" : "")
       }
       onClick={onClick}
     >
@@ -690,15 +670,12 @@ function BatchCard({
 
       <div className="card-body">
         <h3>
-          {String(
-            batch.name || "Unnamed Batch"
-          )}
+          {String(batch.name || "Unnamed Batch")}
         </h3>
 
         <div className="meta">
           <span>
-            {batch.language ||
-              "All Languages"}
+            {batch.language || "All Languages"}
           </span>
 
           <span>
@@ -725,9 +702,7 @@ function BatchCard({
             disabled={enrolled}
             onClick={onEnroll}
           >
-            {enrolled
-              ? "✓ Enrolled"
-              : "Enroll"}
+            {enrolled ? "✓ Enrolled" : "Enroll"}
           </button>
         </div>
       </div>
@@ -740,4 +715,134 @@ function BatchDetail({
   onClose,
   onEnroll,
   enrolled,
-})
+}) {
+  return (
+    <div className="modal-wrap">
+      <div className="modal">
+        <button
+          className="close"
+          onClick={onClose}
+        >
+          ×
+        </button>
+
+        <img
+          className="detail-image"
+          src={
+            batch.image ||
+            "https://placehold.co/900x500?text=Prep+Master"
+          }
+          alt=""
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src =
+              "https://placehold.co/900x500?text=Prep+Master";
+          }}
+        />
+
+        <div className="detail-content">
+          <span className="eyebrow">BATCH</span>
+
+          <h2>
+            {String(batch.name || "Unnamed Batch")}
+          </h2>
+
+          <p>
+            {String(
+              batch.description ||
+                "Study material and lessons for this batch."
+            )}
+          </p>
+
+          <div className="detail-grid">
+            <div>
+              <b>Teacher</b>
+              <span>
+                {String(
+                  batch.teacher ||
+                    "Prep Master Faculty"
+                )}
+              </span>
+            </div>
+
+            <div>
+              <b>Language</b>
+              <span>
+                {String(
+                  batch.language ||
+                    "All languages"
+                )}
+              </span>
+            </div>
+
+            <div>
+              <b>Price</b>
+              <span>
+                {String(batch.price || "Free")}
+              </span>
+            </div>
+          </div>
+
+          <h3>Subjects</h3>
+
+          <div className="chips">
+            {(Array.isArray(batch.subjects)
+              ? batch.subjects
+              : []
+            ).map((subject, i) => (
+              <span
+                key={`${String(subject)}-${i}`}
+              >
+                {String(subject)}
+              </span>
+            ))}
+          </div>
+
+          <h3>Study Content</h3>
+
+          {(batch.content || []).length ? (
+            <div className="content-list">
+              {batch.content.map((c, i) => {
+                const title =
+                  c && typeof c === "object"
+                    ? c.title ||
+                      c.name ||
+                      "Lesson"
+                    : String(
+                        c || "Lesson"
+                      );
+
+                return (
+                  <div key={i}>
+                    📘 {String(title)}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="muted">
+              Content admin panel se add kiya ja sakta hai.
+            </p>
+          )}
+
+          <button
+            className="primary wide"
+            disabled={enrolled}
+            onClick={onEnroll}
+          >
+            {enrolled
+              ? "✓ Enrolled"
+              : "Enroll in this Batch"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Empty({ text }) {
+  return (
+    <div className="empty">
+      <div>📚</div>
+      <p>{text}</p>
+ 

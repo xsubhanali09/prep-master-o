@@ -845,4 +845,7 @@ function Empty({ text }) {
     <div className="empty">
       <div>📚</div>
       <p>{text}</p>
+    </div>
+  );
+}
  

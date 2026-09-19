@@ -1,0 +1,17 @@
+PREP MASTER FIXED VERSION
+
+Fixed:
+1. Client-side visitor ID generation is now safe when localStorage/crypto.randomUUID
+   is unavailable.
+2. Theme localStorage access is protected.
+3. External batch API values are normalized to safe strings.
+4. Empty/invalid external API data no longer removes the built-in demo batches.
+5. Batch images have a safe fallback.
+6. Batch/search rendering is hardened against unexpected API data.
+
+Files changed:
+- components/PrepMasterApp.js
+- app/api/batches/route.js
+
+Vercel Build Command:
+npm run build
